@@ -1,91 +1,93 @@
+"use client";
+import { OPTIONS } from '@/lib/constants';
+import Option from '@/components/Option';
 import Image from 'next/image'
-import { Inter } from 'next/font/google'
-import styles from './page.module.css'
-
-const inter = Inter({ subsets: ['latin'] })
-
+// import { Inter } from 'next/font/google'
+import { useRef, useState } from 'react'
 export default function Home() {
+  const promptRef = useRef();
+  const [renderedImage, setRenderedImage] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const appendPrompt = (word) => {
+    promptRef.current.value = promptRef.current.value.concat(", ", word)
+  }; 
+  const handleGenerate = async () => {
+    setLoading(true);
+    try {}
+      const resp = await fetch("/api/openai/", {
+        method: 'POST',
+        headers: {
+          "Content-Type" : "application/json", 
+        } ,
+        body: JSON.stringify({ prompt: promptRef.current.value })
+
+      });
+      if (!resp.ok) {
+        throw new Error('Unable to generate the image');
+      }
+
+      const data = await resp.json();
+      console.log(data);
+      setRenderedImage(data.data);
+    } catch (error) {
+      console.log(error.message); 
+    } finally{
+
+    };
+    )
+
+  }
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+    <main className='container max-w-4xl mx-auto'>
+      <section className='flex items-center gap-2 px-6 py-6'>
+        <h2>Prompt</h2>
+          <input 
+          type='text' 
+          text=''
+          className='w-full outline-none py-2 px-6 bg-gray-600 rounded-full' 
+          placeholder='a woman walking her dog, a ballerina dancing'
+          defaultValue=' a dog playing with a ball'
+          ref = {promptRef}
+          />
+        </section>
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-        <div className={styles.thirteen}>
-          <Image src="/thirteen.svg" alt="13" width={40} height={31} priority />
-        </div>
-      </div>
+        <section className='grid grid-cols-2 gap-4 '>
+          {/* LEFT */}
+          <div className='flex flex-col  gap-6 px-6'>
+            <button 
+              disabled={loading}
+              onClick = {handleGenerate} className='hover:opacity-80 py-2 px-6 bg-line-600 rounded-3xl  bg-lime-400'>
+              {loading ? "Generating, please wait" : "Generate" }
+            </button>
 
-      <div className={styles.grid}>
-        <a
-          href="https://beta.nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+            {setRenderedImage.length === 0  && (
+              <div className='bg-gray-600 aspect-square flex item'>
+              Image will show here
+            </div>
+            )}
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>Explore the Next.js 13 playground.</p>
-        </a>
+             {renderedImage.map((image) => {
+              return <img key={image.url} src= {image.url} />;
+             })}
+            
+          </div>
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+          {/* RIGHT */}
+          <div className='py-6'>
+            <h2> Other options</h2>
+            {OPTIONS.map((option) => {
+              return (
+                <Option 
+                  key = {option.title}
+                  title = {option.title}
+                  values = {option.values}
+                  onAppend = {appendPrompt}
+                  />
+              );
+            })}
+          
+            </div>
+        </section>
+      </main>
   )
 }
